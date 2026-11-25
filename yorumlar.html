@@ -38,7 +38,8 @@
   .kicker{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
   h1{font-family:Fraunces,serif;font-weight:300;font-size:clamp(46px,7vw,104px);line-height:.95;letter-spacing:-.02em;margin-bottom:22px}
   h1 em{font-style:italic;color:var(--accent)}
-  h1 .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.06em}
+  /* kelimeler maskenin içinden kayarak gelir; ğ, y, ç gibi harflerin altı kesilmesin diye alta pay bırakılır */
+  h1 .w{display:inline-block;overflow:hidden;vertical-align:bottom;padding:.04em 0 .2em;margin-bottom:-.2em}
   h1 .w > span{display:inline-block}
   .lead{font-size:15.5px;line-height:1.7;color:#5d554e;max-width:520px;margin:0 auto 40px}
 
