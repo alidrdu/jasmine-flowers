@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jasmine Flowers — Vitrin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<style>
+  :root{ --tint:#f1a7bd; --ink:#2b2622; --muted:#8a8178; --paper:#f6f1ea; --accent:#c2536a; }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;color:var(--ink);font-family:Inter,system-ui,sans-serif;background:var(--paper)}
+  body{background:
+      radial-gradient(ellipse 70% 55% at 50% 72%, color-mix(in srgb, var(--tint) 38%, #fffaf4) 0%, transparent 70%),
+      radial-gradient(ellipse 90% 70% at 50% 30%, color-mix(in srgb, var(--tint) 14%, var(--paper)) 0%, var(--paper) 80%);
+  }
+  body::after{content:"";position:fixed;inset:0;pointer-events:none;opacity:.28;z-index:50;mix-blend-mode:multiply;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/><feColorMatrix values='0 0 0 0 .5  0 0 0 0 .44  0 0 0 0 .38  0 0 0 .22 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+  #pollen{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+  header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:22px 36px;z-index:40}
+  .logo{font-family:Fraunces,serif;font-size:22px}
+  .logo i{font-weight:300;color:var(--accent)}
+  nav{display:flex;gap:28px;font-size:12px;letter-spacing:.12em;text-transform:uppercase}
+  a{color:inherit;text-decoration:none}
+  nav a{color:var(--muted);position:relative;padding-bottom:4px;transition:color .3s}
+  nav a:hover{color:var(--ink)}
+  nav a.on{color:var(--ink)}
+  nav a.on::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--accent)}
+  .curtain{position:fixed;inset:0;z-index:200;background:var(--accent);pointer-events:none;transform:scaleY(1);transform-origin:50% 0}  /* sayfa perde kapalıyken açılır */
+
+  /* Büyük başlık */
+  .hero{position:fixed;left:0;right:0;text-align:center;z-index:1;pointer-events:none}
+  .hero .kicker{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+  .hero h1{font-family:Fraunces,serif;font-weight:300;font-size:clamp(44px,9.5vw,156px);line-height:.95;letter-spacing:-.02em;
+    color:color-mix(in srgb, var(--tint) 55%, var(--ink));white-space:nowrap;overflow:hidden;padding:0 4vw}
+  .hero h1 .ch{display:inline-block;will-change:transform}
+  .hero h1 em{font-style:italic}
+
+  /* Sahne */
+  #stage{position:fixed;inset:0;z-index:2;touch-action:none;cursor:grab}
+  #stage.drag{cursor:grabbing}
+  .disc{position:absolute;border-radius:50%;pointer-events:none;
+    background:
+      radial-gradient(circle, rgba(255,255,255,.55) 0 38%, transparent 38.5%),
+      repeating-radial-gradient(circle, rgba(120,90,60,.07) 0 1px, transparent 1px 22px),
+      repeating-conic-gradient(from 0deg, rgba(255,255,255,.22) 0 4deg, rgba(255,255,255,0) 4deg 15deg),
+      radial-gradient(circle, color-mix(in srgb, var(--tint) 30%, #efe5d8) 0%, color-mix(in srgb, var(--tint) 18%, #e6d8c6) 70%, #d7c4ad 71%, #cdb89f 100%);
+    box-shadow:0 40px 80px -20px rgba(80,50,30,.35), inset 0 0 0 2px rgba(255,255,255,.4)}
+  .disc-edge{position:absolute;border-radius:50%;pointer-events:none;background:linear-gradient(#c7b096,#a88d70)}
+  /* vitrin ışığı: yukarıdan öne düşen yumuşak huzme + tablada ışık havuzu */
+  .beam{position:fixed;pointer-events:none;z-index:1;mix-blend-mode:soft-light;opacity:.9;
+    background:linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.75) 55%, rgba(255,255,255,.95) 100%);
+    clip-path:polygon(42% 0, 58% 0, 100% 100%, 0 100%);filter:blur(18px)}
+  .spot{position:absolute;border-radius:50%;pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(255,255,255,.85), rgba(255,255,255,0) 68%)}
+  .tip{position:fixed;z-index:120;pointer-events:none;transform:translate(-50%,-100%);font-family:Fraunces,serif;font-size:15px;
+    background:rgba(255,255,255,.8);backdrop-filter:blur(8px);padding:6px 12px;border-radius:999px;white-space:nowrap;opacity:0;
+    box-shadow:0 6px 18px rgba(80,50,30,.12)}
+  .swipe{position:fixed;left:50%;transform:translateX(-50%);z-index:20;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);pointer-events:none}
+  .nextwrap{position:relative}
+  .nextwrap svg{position:absolute;inset:-4px;width:calc(100% + 8px);height:calc(100% + 8px);pointer-events:none;transform:rotate(-90deg)}
+  .nextwrap circle{fill:none;stroke:var(--accent);stroke-width:2;stroke-linecap:round}
+  .item{position:absolute;left:0;top:0;transform-origin:50% 100%;will-change:transform,opacity;user-select:none}
+  .item img{display:block;width:100%;height:100%;object-fit:contain;object-position:50% 100%;pointer-events:none;
+    filter:drop-shadow(0 22px 18px rgba(70,40,20,.22))}
+  .shadow{position:absolute;left:0;top:0;border-radius:50%;pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(60,35,15,.38), rgba(60,35,15,0) 70%)}
+
+  /* Alt kontroller */
+  .controls{position:fixed;left:0;right:0;bottom:26px;display:flex;justify-content:space-between;align-items:center;padding:0 36px;z-index:20}
+  .chips{display:flex;gap:6px;background:rgba(255,255,255,.55);backdrop-filter:blur(10px);padding:5px;border-radius:999px;box-shadow:0 6px 20px rgba(80,50,30,.08)}
+  .chips button{white-space:nowrap;font:inherit;font-size:12.5px;border:0;background:transparent;border-radius:999px;padding:9px 16px;cursor:pointer;color:var(--ink);transition:.3s}
+  .chips button.act{background:var(--ink);color:var(--paper)}
+  .counter{font-family:Fraunces,serif;font-size:15px;color:var(--muted);min-width:80px}
+  .counter b{font-weight:400;color:var(--ink);font-size:22px}
+  .nav-arrows{display:flex;gap:10px}
+  .round{width:46px;height:46px;border-radius:50%;border:1px solid rgba(43,38,34,.2);background:rgba(255,255,255,.55);backdrop-filter:blur(10px);cursor:pointer;font-size:16px;color:var(--ink);transition:.25s}
+  .round:hover{background:var(--ink);color:var(--paper)}
+  .cta-front{position:fixed;z-index:15;transform:translate(-50%,0);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink);
+    background:rgba(255,255,255,.7);backdrop-filter:blur(8px);padding:10px 18px;border-radius:999px;cursor:pointer;border:0;box-shadow:0 8px 24px rgba(80,50,30,.12)}
+  .cta-front span{display:inline-block;transition:transform .3s}
+  .cta-front:hover span{transform:translateX(4px)}
+
+  /* Detay */
+  .panel{position:fixed;right:8vw;top:50%;transform:translateY(-50%);width:min(380px,34vw);z-index:30;pointer-events:none;opacity:0}
+  .panel.on{pointer-events:auto}
+  .panel .kicker{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+  .panel h2{font-family:Fraunces,serif;font-weight:300;font-size:50px;line-height:1;margin-bottom:18px}
+  .panel p{font-size:14.5px;line-height:1.7;color:#5d554e;margin-bottom:26px}
+  .ask{display:inline-flex;align-items:center;gap:10px;background:#25d366;color:#fff;text-decoration:none;font-size:14px;letter-spacing:.03em;
+    padding:15px 26px 15px 20px;border-radius:999px;box-shadow:0 14px 30px -12px rgba(37,211,102,.7);transition:transform .25s, box-shadow .25s}
+  .ask:hover{transform:translateY(-2px);box-shadow:0 18px 34px -12px rgba(37,211,102,.8)}
+  .ask svg{width:20px;height:20px;fill:#fff}
+  .back{position:fixed;left:36px;top:86px;z-index:31;font:inherit;font-size:13px;background:none;border:0;cursor:pointer;color:var(--ink);opacity:0;pointer-events:none;letter-spacing:.04em}
+  .back.on{pointer-events:auto}
+  .petal{position:fixed;z-index:25;pointer-events:none;border-radius:60% 40% 60% 40%/70% 50% 50% 30%}
+
+  @media (max-width:760px){
+    header{padding:18px 16px} .logo{font-size:18px} nav{gap:12px;font-size:10px;letter-spacing:.06em}
+    .controls{padding:0 16px;bottom:18px} .counter{display:none}
+    .chips button{padding:8px 12px;font-size:12px}
+    .nav-arrows .round{width:40px;height:40px}
+    .panel{left:6vw;right:6vw;width:auto;top:auto;bottom:24px;transform:none}
+    .panel h2{font-size:34px;margin-bottom:10px}
+    .panel p{font-size:13px;margin-bottom:14px}
+    .back{left:20px;top:64px}
+  }
+</style>
+</head>
+<body>
+<canvas id="pollen"></canvas>
+<div class="curtain" id="curtain"></div>
+<header>
+  <div class="logo">Jasmine <i>Flowers</i></div>
+  <nav><a href="index.html" class="on">Vitrin</a><a href="iletisim.html">İletişim</a><a href="yorumlar.html">Yorumlar</a></nav>
+</header>
+
+<div class="hero" id="hero"><div class="kicker" id="heroKicker">Mevsimin seçkisi</div><h1 id="heroTitle"></h1></div>
+
+<div id="stage">
+  <div class="disc-edge" id="discEdge"></div>
+  <div class="disc" id="disc"></div>
+  <div class="spot" id="spot"></div>
+</div>
+<div class="beam" id="beam"></div>
+<div class="tip" id="tip"></div>
+<div class="swipe" id="swipe">← kaydırarak çevir →</div>
+<button class="cta-front" id="ctaFront">İncele <span>→</span></button>
+
+<div class="controls" id="controls">
+  <div class="counter" id="counter"></div>
+  <div class="chips" id="chips">
+    <button data-f="all" class="act">Tümü</button><button data-f="hand">El buketleri</button><button data-f="stand">Aranjmanlar</button>
+  </div>
+  <div class="nav-arrows"><button class="round" id="prev" aria-label="Önceki">←</button><span class="nextwrap"><button class="round" id="next" aria-label="Sonraki">→</button><svg viewBox="0 0 54 54"><circle id="autoRing" cx="27" cy="27" r="25" pathLength="100" stroke-dasharray="0 100"/></svg></span></div>
+</div>
+
+<button class="back" id="back">← vitrine dön</button>
+<div class="panel" id="panel">
+  <div class="kicker" id="dKicker"></div>
+  <h2 id="dName"></h2>
+  <p id="dDesc"></p>
+  <a class="ask" href="#" id="askBtn" target="_blank" rel="noopener">
+    <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7a2.8 2.8 0 0 0 1.8-1.3 2.3 2.3 0 0 0 .2-1.3c-.1-.1-.3-.2-.5-.3z"/></svg>
+    WhatsApp'tan bilgi al</a>
+</div>
+
+<script>
+/* ---------------- VERİ ---------------- */
+const ITEMS = [
+  {id:'pembe-ruya',        kind:'hand',  name:'Pembe Bulut',       desc:'Beyaz krizantem, pembe gül ve antoryum; ortanca, lisianthus ve hypericum ile şeftali kâğıtta. Sapı jüt ip ve küçük bir çiçek demetiyle bağlı.', tint:'#f0a3bb', petals:['#f1a7bd','#f5d7e0','#c9759a']},
+  {id:'kirmizi-kutu',      kind:'stand', name:'Gece Gülleri',       desc:'Kırmızı dal güller ve somon güller, beyaz limonyum ile siyah şapka kutusunda; kırmızı saten kurdeleyle.', tint:'#e2566a', petals:['#c8203a','#f08a7a','#ffffff']},
+  {id:'ortanca-sakayik',   kind:'hand',  name:'Lila Ortanca',desc:'Lila ortancalar, pembe şakayık tomurcukları, sedum ve beyaz limonyum; gül kurusu kâğıtta, pembe kurdeleyle.', tint:'#b7a3e0', petals:['#b9a6e0','#f1c5d4','#8e7cc3']},
+  {id:'beyaz-orkide',      kind:'stand', name:'Gümüş Orkide',     desc:'Çok dallı beyaz orkideler, pampas ve yosun ile gümüş saksıda; altın rengi kurdelelerle.', tint:'#d9c48e', petals:['#ffffff','#f6f1d4','#d4b36c']},
+  {id:'antoryum-buketi',   kind:'hand',  name:'Bordo Antoryum', desc:'Bordo antoryumlar, pembe ve fuşya güller, pembe ortanca ve mor krizantemler; gümüş şeritli pembe kâğıtta.', tint:'#d9587a', petals:['#d64b6d','#e98aa6','#8e2440']},
+  {id:'lavanta-sepet',     kind:'stand', name:'Lila Çiçek Çantası',    desc:'Mor krizantem, pembe gerbera, lila lisianthus, lilyum tomurcukları ve beyaz şebboy; kulplu lila çantada, pembe-mor kurdeleyle.', tint:'#a77be6', petals:['#9b6be0','#f0a8d0','#d9c4f5']},
+  {id:'karamel-orkide',    kind:'hand',  name:'Kapuçino & Orkide',   desc:'Kapuçino tonlu bahçe gülleri ve benekli turuncu vanda orkide; desenli şeftali kâğıtta, sapında orkide ve hardal kurdeleyle.', tint:'#cf9f80', petals:['#c49a7f','#e3c2ad','#a6765b']},
+  {id:'bordo-vazo',        kind:'stand', name:'Bordo Lilyum',       desc:'Beyaz lilyum, bordo krizantem, süs lahanası, mor gala ve aslanağzı; okaliptüs dallarıyla dokulu seramik vazoda.', tint:'#9a3a57', petals:['#7a1f3d','#ffffff','#c98fa0']},
+  {id:'kirmizi-gul-buketi',kind:'hand',  name:'Kırmızı Güller',      desc:'Bol kırmızı gül, cipso bulutu ve okaliptüs; şeftali tonlu kâğıtta, kırmızı kurdeleyle.', tint:'#c2283f', petals:['#b3172f','#d8314b','#7d0f20']},
+  {id:'pembe-kutu',        kind:'stand', name:'Pembe Şapka Kutusu',       desc:'Pembe güller, fuşya şebboy, beyaz frezya ve limonyum; okaliptüs dallarıyla pembe şapka kutusunda.', tint:'#ef8fb0', petals:['#ef8fb0','#c53a7a','#fde2ea']},
+  {id:'bahar-cana',        kind:'stand', name:'Bahar Çanağı',     desc:'Mor krizantem, pembe gül, mercan gerbera, mavi sümbül ve mimoza; söğüt dalları ve pampasla beton çanakta.', tint:'#f39a7a', petals:['#f07aa0','#f5d23a','#6f7ee0']},
+  {id:'yilbasi-buketi',    kind:'hand',  name:'Kokina Buketi',   desc:'Kokina, çam dalları, kozalak ve yılbaşı süsleri; söğüt dallarıyla kırmızı yılbaşı kâğıdında, yeşil kurdeleyle.', tint:'#c8312f', petals:['#d8262c','#f2a03a','#2f6b3a']},
+  {id:'sakura-vazo',       kind:'stand', name:'Şeftali Fanus',     desc:'Şeftali güller, mor vanda orkide, pembe krizantem ve beyaz şebboy; mimoza ve söğüt dallarıyla yeşil fanus vazoda.', tint:'#f2b48f', petals:['#f6b48c','#c7b5ee','#ffffff']},
+];
+const TAU = Math.PI*2;
+
+/* ---------------- ELEMANLAR ---------------- */
+const stage = document.getElementById('stage');
+const nodes = ITEMS.map((it,i)=>{
+  const sh = document.createElement('div'); sh.className='shadow'; stage.appendChild(sh);
+  const el = document.createElement('div'); el.className='item';
+  el.innerHTML = `<img src="img/${it.id}.avif" alt="${it.name}" draggable="false" onerror="this.onerror=null;this.src='img/${it.id}.png'">`;
+  stage.appendChild(el);
+  return {it, el, sh, i, base:i/ITEMS.length*TAU, presence:1, focus:0, hov:0};
+});
+
+/* ---------------- DURUM ---------------- */
+const S = {
+  rot:0, vel:0, target:0, dragging:false, filter:'all',
+  visible: nodes.slice(), front:null, detail:0, sel:null, lastInput:0, intro:0
+};
+let G = {}; // geometri
+function geometry(){
+  const W=innerWidth, H=innerHeight, mob=W<760;
+  const rx = mob ? W*.40 : Math.min(W*.38, 640);
+  const ry = rx*.26;
+  const cy = mob ? H*.62 : H*.70;
+  // çiçek boyu yarıçapa bağlı: dar pencerede komşularla üst üste binmesin
+  const baseH = mob ? Math.min(H*.40, W*.9) : Math.min(H*.44, 480, rx*.95);
+  // yatay yayılma: mobilde komşular ekran kenarına doğru itilir
+  const spread = mob ? W*.62 : rx;
+  G = {W,H,mob,cx:W/2,cy,rx,ry,baseH,spread};
+  // ışık havuzu ve huzme öndeki çiçeğin üzerinde
+  const sp = document.getElementById('spot'), bm = document.getElementById('beam');
+  const sw = rx*1.1, sh = ry*1.1;
+  Object.assign(sp.style,{width:sw+'px',height:sh+'px',left:(G.cx-sw/2)+'px',top:(cy+ry-sh*.55)+'px'});
+  const bw = rx*1.3;
+  Object.assign(bm.style,{width:bw+'px',height:(cy+ry)+'px',left:(G.cx-bw/2)+'px',top:'0px'});
+  const swEl = document.getElementById('swipe'); swEl.style.top = (cy + ry + 70)+'px'; swEl.style.display = mob ? '' : 'none'; // masaüstünde imleç zaten 'tut-çevir' gösteriyor
+  const d = document.getElementById('disc'), e = document.getElementById('discEdge');
+  // tabla: gerçek bir daire, eğik görünsün diye dikeyde basılır (döndürme basmadan önce uygulanır)
+  const dw = rx*2.35; G.squash = ry/rx;
+  Object.assign(d.style,{width:dw+'px',height:dw+'px',left:(G.cx-dw/2)+'px',top:(cy-dw/2)+'px'});
+  Object.assign(e.style,{width:dw+'px',height:dw+'px',left:(G.cx-dw/2)+'px',top:(cy-dw/2+14)+'px',transform:`scaleY(${G.squash})`});
+  document.getElementById('hero').style.top = (mob ? H*.10 : H*.12)+'px';
+}
+geometry(); addEventListener('resize', geometry);
+
+/* ---------------- FİLTRE / AÇILAR ---------------- */
+const wrapPI = a => Math.atan2(Math.sin(a), Math.cos(a));   // açıyı -π…π aralığına indir
+function layoutAngles(animate){
+  const prevFront = S.front;
+  S.visible = nodes.filter(n=> S.filter==='all' || n.it.kind===S.filter);
+  const n = S.visible.length;
+  S.step = TAU/n;
+  nodes.forEach(nd=>{
+    const on = S.visible.includes(nd);
+    gsap.to(nd,{presence:on?1:0, duration:animate?.8:0, ease:on?'back.out(1.4)':'power2.in'});
+  });
+  if(!animate){ S.visible.forEach((nd,k)=> nd.base = k*S.step); S.target = S.rot = 0; return; }
+
+  // Çark yerinde kalır; yalnızca çiçekler aralarını açar ya da kapatır.
+  // 1) Önde kalacak çiçek: mevcut ön çiçek yeni grupta varsa o, yoksa öne en yakın görünen.
+  const rel = nd => wrapPI(nd.base + S.rot);                 // öne göre şu anki açı
+  const anchor = S.visible.includes(prevFront) ? prevFront
+               : S.visible.reduce((b,nd)=> Math.abs(rel(nd)) < Math.abs(rel(b)) ? nd : b);
+  // 2) Görünen çiçekleri çark üzerindeki mevcut sıralarına göre diz (sıra bozulmasın, çaprazlama olmasın)
+  const order = S.visible.slice().sort((a,b)=> wrapPI(rel(a)-rel(anchor)) - wrapPI(rel(b)-rel(anchor)));
+  const ia = order.indexOf(anchor);
+  // 3) Çarkı durdur ve ön çiçeği tam öne hizala; her çiçek yeni yerine en kısa yoldan kayar
+  gsap.killTweensOf(S, 'rot'); S.vel = 0;
+  S.rot = wrapPI(S.rot);                                      // tam tur farkı: görüntü değişmez
+  // dönüş adımın katına oturur (ok tuşları ve sürükleme bu ızgarayı kullanır) — en fazla yarım adım
+  const newRot = Math.round(S.rot/S.step)*S.step;
+  S.target = newRot;
+  order.forEach((nd,k)=>{
+    let k2 = k - ia; if(k2 > n/2) k2 -= n; if(k2 <= -n/2) k2 += n;   // önün iki yanına dengeli dağıt
+    const finalBase = k2*S.step - newRot;                   // bittiğinde öne göre açı = k2·adım
+    const d = wrapPI(finalBase - nd.base);                  // en kısa yoldan kay
+    gsap.killTweensOf(nd, 'base');
+    gsap.to(nd,{base: nd.base + d, duration:.9, ease:'power3.inOut'});
+  });
+}
+layoutAngles(false);
+
+function angleOf(nd){ return nd.base + S.rot; }
+function snapTarget(){ S.target = Math.round(S.rot/S.step)*S.step; }
+function goTo(nd){
+  // nd öne gelecek şekilde rot hedefi
+  let need = -nd.base; // rot öyle olmalı ki base+rot ≡ 0
+  let diff = ((need - S.rot) % TAU + TAU*1.5) % TAU - TAU/2;
+  S.target = S.rot + diff; S.lastInput = performance.now();
+}
+function stepBy(dir){ if(performance.now()-S.lastInput<6000 && S.introDone) hideSwipe(); S.target = Math.round(S.target/S.step)*S.step - dir*S.step; S.lastInput = performance.now(); }
+
+/* ---------------- ETKİLEŞİM ---------------- */
+let drag = {x:0, lastX:0, t:0, moved:0, downNode:null};
+stage.addEventListener('pointerdown', e=>{
+  if(S.detail>0.01) return;
+  S.dragging = true; stage.classList.add('drag'); stage.setPointerCapture(e.pointerId);
+  drag = {x:e.clientX, lastX:e.clientX, t:performance.now(), moved:0, downNode:hitTest(e.clientX,e.clientY)};
+  S.vel = 0; S.lastInput = performance.now(); clearHover();
+});
+stage.addEventListener('pointermove', e=>{
+  if(!S.dragging){ hover(e.clientX,e.clientY); S.lastInput = performance.now(); return; } // fare sahnedeyken otomatik dönüş durur
+  const dx = e.clientX - drag.lastX; drag.lastX = e.clientX; drag.moved += Math.abs(dx);
+  const k = 1/(G.rx*1.1);
+  S.rot += dx*k; S.vel = dx*k; S.target = S.rot; S.lastInput = performance.now();
+  if(drag.moved > 30) hideSwipe();
+});
+const endDrag = e=>{
+  if(!S.dragging) return;
+  S.dragging=false; stage.classList.remove('drag');
+  if(drag.moved < 6 && drag.downNode){ clickNode(drag.downNode); return; }
+  // atalet ile hedef: hıza göre ileri at, en yakına oturt
+  S.target = S.rot + S.vel*9; S.target = Math.round(S.target/S.step)*S.step;
+};
+stage.addEventListener('pointerup', endDrag); stage.addEventListener('pointercancel', endDrag);
+let wheelAcc=0, wheelLock=0;
+addEventListener('wheel', e=>{
+  if(S.detail>0.5) return;
+  wheelAcc += Math.abs(e.deltaX)>Math.abs(e.deltaY)? e.deltaX : e.deltaY;
+  const now=performance.now();
+  if(Math.abs(wheelAcc)>60 && now>wheelLock){ stepBy(Math.sign(wheelAcc)); wheelAcc=0; wheelLock=now+380; }
+},{passive:true});
+addEventListener('keydown', e=>{
+  if(e.key==='ArrowRight') S.detail>.5 ? detailStep(1) : stepBy(1);
+  if(e.key==='ArrowLeft')  S.detail>.5 ? detailStep(-1) : stepBy(-1);
+  if(e.key==='Enter' && S.detail<.5 && S.front) openDetail(S.front);
+  if(e.key==='Escape') closeDetail();
+});
+prev.onclick = ()=> S.detail>.5 ? detailStep(-1) : stepBy(-1);
+next.onclick = ()=> S.detail>.5 ? detailStep(1) : stepBy(1);
+ctaFront.onclick = ()=> S.front && openDetail(S.front);
+chips.addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b || b.dataset.f===S.filter || S.detail>.01) return;
+  [...chips.children].forEach(c=>c.classList.toggle('act', c===b));
+  S.filter = b.dataset.f; layoutAngles(true); S.lastInput = performance.now();
+});
+
+// nokta-öğe çarpışması (görsel kutusu, öndekiler öncelikli)
+function hitTest(x,y){
+  let best=null, bz=-1;
+  nodes.forEach(nd=>{
+    if(nd.presence<.5) return;
+    const r = nd.rect; if(!r) return;
+    if(x>r.l+r.w*.12 && x<r.l+r.w*.88 && y>r.t+r.h*.1 && y<r.t+r.h && nd.z>bz){ best=nd; bz=nd.z; }
+  });
+  return best;
+}
+let hovered=null;
+function hover(x,y){
+  const h = hitTest(x,y);
+  if(h!==hovered){
+    if(hovered) gsap.to(hovered,{hov:0,duration:.5});
+    hovered = h; if(h) gsap.to(h,{hov:1,duration:.5,ease:'back.out(2)'});
+    stage.style.cursor = h ? 'pointer' : '';
+    // yandaki çiçeklerde isim etiketi; öndekinin adı zaten başlıkta
+    if(h && h!==S.front){ tip.textContent = h.it.name; gsap.to(tip,{opacity:1, duration:.25}); }
+    else gsap.to(tip,{opacity:0, duration:.2});
+  }
+}
+function clearHover(){ if(hovered) gsap.to(hovered,{hov:0,duration:.4}); hovered=null; gsap.to(tip,{opacity:0,duration:.15}); stage.style.cursor=''; }
+function hideSwipe(){ if(!S.swipeHidden){ S.swipeHidden = true; gsap.to('#swipe',{opacity:0, y:6, duration:.5}); } }
+function clickNode(nd){
+  if(nd===S.front && Math.abs(S.rot-S.target)<.05) openDetail(nd);
+  else goTo(nd);
+}
+
+/* ---------------- ÖN ÖĞE DEĞİŞİMİ ---------------- */
+function splitTitle(name){
+  const h = document.getElementById('heroTitle');
+  h.innerHTML = [...name].map(c=> c===' ' ? '<span class="ch">&nbsp;</span>' : `<span class="ch">${c}</span>`).join('');
+  // uzun adlar dar ekranda taşmasın: gerekirse yazı boyutu sığacak kadar küçülür
+  h.style.fontSize = '';
+  if(h.scrollWidth > h.clientWidth){ h.style.fontSize = (parseFloat(getComputedStyle(h).fontSize) * h.clientWidth / h.scrollWidth * 0.97) + 'px'; }
+  return h.querySelectorAll('.ch');
+}
+let titleTl = null;
+function setFront(nd){
+  if(nd===S.front) return;
+  S.front = nd; clearHover();
+  // eski harfler yukarı uçup çıkar, yenileri aşağıdan gelir
+  if(titleTl) titleTl.kill();
+  const old = document.querySelectorAll('#heroTitle .ch');
+  titleTl = gsap.timeline();
+  if(old.length) titleTl.to(old,{yPercent:-110, opacity:0, rotate:-6, duration:.28, stagger:.012, ease:'power2.in'});
+  titleTl.add(()=>{
+    const chs = splitTitle(nd.it.name);
+    gsap.fromTo(chs,{yPercent:110, opacity:0, rotate:8},{yPercent:0, opacity:1, rotate:0, duration:.7, stagger:.025, ease:'expo.out'});
+  });
+  // ışık havuzu kısa bir parlama yapar
+  gsap.fromTo('#spot',{scale:.75},{scale:1, duration:.9, ease:'back.out(1.6)'});
+  gsap.to(document.documentElement,{'--tint':nd.it.tint, duration:1.2, ease:'power2.out'});
+  heroKicker.textContent = nd.it.kind==='hand' ? 'El buketi' : 'Aranjman';
+  const idx = S.visible.indexOf(nd)+1;
+  counter.innerHTML = `<b>${String(idx).padStart(2,'0')}</b> / ${String(S.visible.length).padStart(2,'0')}`;
+}
+
+/* ---------------- DETAY ---------------- */
+function fillPanel(it){
+  dKicker.textContent = it.kind==='hand' ? 'El buketi' : 'Aranjman';
+  dName.textContent = it.name; dDesc.textContent = it.desc;
+  askBtn.href = waLink(it);
+}
+function openDetail(nd){
+  if(S.sel) return;
+  goTo(nd); S.sel = nd; fillPanel(nd.it); setHash(nd.it.id); hideSwipe(); gsap.to(tip,{opacity:0,duration:.2});
+  panel.classList.add('on'); back.classList.add('on');
+  const tl = gsap.timeline();
+  tl.to(S,{detail:1, duration:1.1, ease:'expo.inOut'},0)
+    .to(nd,{focus:1, duration:1.1, ease:'expo.inOut', onComplete:()=>burst(nd)},0)
+    .to('#hero, .cta-front, #controls .chips, #controls .counter',{opacity:0, duration:.4},0)
+    .fromTo(panel,{opacity:0, x:50},{opacity:1, x:0, duration:.8, ease:'power3.out'},.5)
+    .fromTo('#panel > *',{opacity:0, y:18},{opacity:1, y:0, stagger:.06, duration:.5},.55)
+    .to(back,{opacity:1, duration:.4},.7);
+}
+function closeDetail(){
+  if(!S.sel) return;
+  const nd = S.sel; setHash(null);
+  gsap.timeline({onComplete:()=>{ S.sel=null; panel.classList.remove('on'); back.classList.remove('on'); }})
+    .to([panel, back],{opacity:0, duration:.3},0)
+    .to(nd,{focus:0, duration:1, ease:'expo.inOut'},0)
+    .to(S,{detail:0, duration:1, ease:'expo.inOut'},0)
+    .to('#hero, .cta-front, #controls .chips, #controls .counter',{opacity:1, duration:.5},.5);
+}
+function detailStep(dir){
+  if(!S.sel) return;
+  const vis = S.visible, cur = vis.indexOf(S.sel);
+  const nd = vis[(cur + dir + vis.length) % vis.length];
+  const old = S.sel; S.sel = nd; setHash(nd.it.id);
+  gsap.to(old,{focus:0, duration:.9, ease:'expo.inOut'});
+  gsap.to(nd,{focus:1, duration:.9, ease:'expo.inOut', onComplete:()=>burst(nd)});
+  stepBy(dir);
+  gsap.to('#panel > *',{opacity:0, y:-12, stagger:.03, duration:.25, onComplete:()=>{
+    fillPanel(nd.it);
+    gsap.fromTo('#panel > *',{opacity:0, y:14},{opacity:1, y:0, stagger:.05, duration:.45});
+  }});
+  gsap.to(document.documentElement,{'--tint':nd.it.tint, duration:1});
+}
+back.onclick = closeDetail;
+// "Bilgi al": o an açık olan çiçeğin adıyla WhatsApp mesajı hazırlanır.
+// Site yayındayken mesaja çiçeğin görsel bağlantısı da eklenir; WhatsApp bu bağlantıdan görsel önizlemesi gösterir.
+const WA_NUMBER = '905357024857';
+const isLocal = /^(localhost|127\.|\[::1\])/.test(location.hostname) || location.protocol === 'file:';
+function waLink(it){
+  let msg = `Merhaba, "${it.name}" hakkında bilgi almak istiyorum.`;
+  if(!isLocal) msg += `
+${new URL('img/' + it.id + '.png', location.href).href}`;
+  return `https://wa.me/${WA_NUMBER}?text=` + encodeURIComponent(msg);
+}
+// Her çiçeğin kendi bağlantısı olur (ör. index.html#urun-pembe-ruya): açılınca vitrin o çiçeğin detayına gider
+function setHash(id){ history.replaceState(null, '', id ? '#urun-' + id : location.pathname + location.search); }
+function openFromHash(){
+  const m = location.hash.match(/^#urun-(.+)$/); if(!m) return;
+  const nd = nodes.find(n=>n.it.id===decodeURIComponent(m[1])); if(!nd || S.sel) return;
+  goTo(nd); setTimeout(()=>openDetail(nd), 900);
+}
+setTimeout(openFromHash, 1400);   // giriş animasyonundan sonra
+addEventListener('hashchange', openFromHash);
+askBtn.addEventListener('click', ()=> gsap.fromTo(askBtn,{scale:.94},{scale:1,duration:.6,ease:'elastic.out(1,.4)'}));
+// Sayfa geçişi: perde iner, sonra diğer sayfaya geçilir
+document.querySelectorAll('a[href$=".html"]').forEach(a=>a.addEventListener('click', e=>{
+  if(e.metaKey || e.ctrlKey || a.classList.contains('on')) { if(a.classList.contains('on')) e.preventDefault(); return; }
+  e.preventDefault();
+  gsap.fromTo('#curtain',{scaleY:0, transformOrigin:'50% 100%'},{scaleY:1, duration:.6, ease:'expo.inOut', onComplete:()=>location.href=a.href});
+}));
+// geri tuşuyla dönüldüğünde perde açık kalmasın
+// sayfaya gelişte perde yukarı doğru kalkar (iletişim sayfasındakiyle aynı efekt)
+gsap.to('#curtain',{scaleY:0, transformOrigin:'50% 0', duration:.9, ease:'expo.inOut'});
+// geri tuşuyla önbellekten dönüldüğünde perde kapalı kalmasın
+addEventListener('pageshow', e=>{ if(e.persisted) gsap.set('#curtain',{scaleY:0}); });
+
+/* ---------------- YAPRAKLAR ---------------- */
+function burst(nd, n=24){
+  const r = nd.rect; if(!r) return;
+  for(let k=0;k<n;k++){
+    const p = document.createElement('div'); p.className='petal';
+    const s = 8+Math.random()*13;
+    Object.assign(p.style,{width:s+'px',height:s*.7+'px',background:nd.it.petals[k%nd.it.petals.length],
+      left:(r.l + r.w*(.2+Math.random()*.6))+'px', top:(r.t + r.h*(.1+Math.random()*.35))+'px',
+      boxShadow:'inset -2px -2px 4px rgba(0,0,0,.12)'});
+    document.body.appendChild(p);
+    const dur = 2.4+Math.random()*1.8;
+    gsap.to(p,{y:innerHeight*(.45+Math.random()*.4), x:(Math.random()-.5)*300, rotation:(Math.random()-.5)*720, opacity:0, duration:dur, ease:'power1.in', onComplete:()=>p.remove()});
+    gsap.to(p,{scaleX:.3, repeat:Math.floor(dur*2), yoyo:true, duration:.25+Math.random()*.2});
+  }
+}
+
+/* ---------------- ÇİZİM DÖNGÜSÜ ---------------- */
+const lerp=(a,b,t)=>a+(b-a)*t;
+function frame(now){
+  const t = now/1000;
+  // otomatik dönüş (boştayken)
+  if(!S.dragging && !S.sel && now - S.lastInput > 6000){ stepBy(1); S.lastInput = now - 2000; }
+  // yay: rot → target
+  if(!S.dragging){
+    const f = (S.target - S.rot);
+    S.vel = S.vel*.82 + f*.018;
+    S.rot += S.vel;
+  }
+  const discEl = document.getElementById('disc');
+  discEl.style.transform = `scaleY(${G.squash}) rotate(${S.rot*57.3}deg)`;
+  if(S.introDone){ discEl.style.opacity = discEdge.style.opacity = 1 - S.detail*.75; spot.style.opacity = beam.style.opacity = (1 - S.detail)*.9; }
+  // otomatik dönüş halkası: bir sonraki dönüşe kalan süre
+  const idle = now - S.lastInput;
+  const prog = (!S.dragging && !S.sel && idle > 2000) ? Math.min(1,(idle-2000)/4000) : 0;
+  autoRing.setAttribute('stroke-dasharray', `${(prog*100).toFixed(1)} 100`);
+  // dönüş hızına göre çiçekler hafifçe yana yatar (ataletin hissi)
+  const tiltBase = Math.max(-9, Math.min(9, -S.vel*420));
+  // az çiçek varsa öndeki daha büyük görünür
+  const countBoost = S.visible.length<=5 ? 1.14 : S.visible.length<=7 ? 1.07 : 1;
+
+  let bestNd=null, bestZ=-2;
+  nodes.forEach(nd=>{
+    const a = angleOf(nd);
+    const x = Math.sin(a), z = Math.cos(a);          // z=1 en önde
+    const depth = (z+1)/2;                           // 0 arka … 1 ön
+    const an = Math.atan2(x, z);                     // öne göre açı (-π…π)
+    const emph = Math.exp(-(an*an)/(2*0.28*0.28));   // yalnızca tam öndeki ~1, komşular ~0.2
+    const pres = nd.presence;
+    // öndeki belirgin büyük, komşular belirgin küçük: boyut farkı ayrımı sağlar
+    let scale = (0.36 + 0.30*Math.pow(depth,1.5) + 0.34*emph) * pres * (1 + (countBoost-1)*emph);
+    // komşuları öndekinden uzağa it (önün çevresinde boşluk açılır)
+    const xs = Math.sign(x)*Math.pow(Math.abs(x), 0.62);
+    let px = G.cx + xs*G.spread, py = G.cy + z*G.ry - (1-emph)*G.ry*0.18;  // komşular biraz geride
+    const bob = depth>0.95 ? Math.sin(t*1.6)*4 : 0;
+    let h = G.baseH*scale*(1 + nd.hov*.04);
+    let op = (0.22 + 0.78*Math.pow(depth,1.5)) * (0.74 + 0.26*emph) * Math.min(1,pres*1.4);
+    // detay modu: seçilen öğe sola büyür, diğerleri söner
+    const D = S.detail, F = nd.focus;
+    if(F>0){
+      const tx = G.mob ? G.cx : G.W*.36, ty = G.mob ? G.H*.62 : G.H*.92;
+      const th = (G.mob ? G.H*.46 : G.H*.74);
+      px = lerp(px, tx, F); py = lerp(py, ty, F); h = lerp(h, th, F); op = lerp(op, 1, F);
+    }
+    op *= (1 - D*.88*(1-F));
+    const w = h*.8;
+    const top = py - h + bob*(1-F), left = px - w/2;
+    const tilt = tiltBase*(1-F)*(0.4+0.6*depth);
+    nd.el.style.transform = `translate3d(${left}px,${top}px,0) rotate(${tilt.toFixed(2)}deg)`;
+    nd.el.style.width = w+'px'; nd.el.style.height = h+'px';
+    nd.el.style.opacity = op;
+    const zi = Math.round(depth*100) + (F>0 ? 200 : 0);
+    nd.el.style.zIndex = zi; nd.z = zi;
+    const blur = (Math.max(0,(0.45-depth))*7 + (1-emph)*1.0)*(1-F) + D*(1-F)*4;  // alan derinliği: önde olmayan hafif flu
+    const fb = blur>0.3 ? `blur(${blur.toFixed(1)}px)` : 'none';
+    if(nd._fb!==fb){ nd.el.style.filter = fb; nd._fb = fb; }
+    // gölge
+    const sw = w*.62, sh = sw*.18;
+    nd.sh.style.transform = `translate3d(${px-sw/2}px,${py-sh/2 - h*0.02}px,0)`;
+    nd.sh.style.width = sw+'px'; nd.sh.style.height = sh+'px';
+    nd.sh.style.opacity = op*.9*(1-F*.3); nd.sh.style.zIndex = zi-1;
+    nd.rect = {l:left, t:top, w, h};
+    if(pres>.5 && z>bestZ){ bestZ=z; bestNd=nd; }
+  });
+  if(bestNd) setFront(bestNd);
+  if(hovered && hovered.rect){ tip.style.left = (hovered.rect.l + hovered.rect.w/2)+'px'; tip.style.top = (hovered.rect.t + hovered.rect.h*.08)+'px'; }
+  // "İncele" butonu ön öğenin altında
+  if(S.front && S.front.rect){
+    const r = S.front.rect;
+    ctaFront.style.left = (r.l + r.w/2)+'px';
+    ctaFront.style.top = Math.min(G.H-120, G.cy + G.ry + 18)+'px';
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ---------------- POLEN PARÇACIKLARI ---------------- */
+const pc = document.getElementById('pollen'), pctx = pc.getContext('2d');
+let dots=[];
+function initPollen(){
+  pc.width = innerWidth*devicePixelRatio; pc.height = innerHeight*devicePixelRatio;
+  dots = Array.from({length: innerWidth<760?28:60}, ()=>({x:Math.random()*innerWidth, y:Math.random()*innerHeight,
+    r:.6+Math.random()*2.2, vx:(Math.random()-.5)*.15, vy:-.08-Math.random()*.25, ph:Math.random()*6.28}));
+}
+initPollen(); addEventListener('resize', initPollen);
+(function pollen(t){
+  pctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  pctx.clearRect(0,0,innerWidth,innerHeight);
+  dots.forEach(d=>{
+    d.x += d.vx + Math.sin(t/1400+d.ph)*.18 + S.vel*30; d.y += d.vy;
+    if(d.y<-10){ d.y=innerHeight+10; d.x=Math.random()*innerWidth; }
+    if(d.x<-10) d.x=innerWidth+10; if(d.x>innerWidth+10) d.x=-10;
+    pctx.beginPath(); pctx.arc(d.x,d.y,d.r,0,6.28);
+    pctx.fillStyle = `rgba(255,250,235,${.35+.35*Math.sin(t/900+d.ph)})`; pctx.fill();
+  });
+  requestAnimationFrame(pollen);
+})(0);
+
+/* ---------------- GİRİŞ ANİMASYONU ---------------- */
+S.lastInput = performance.now();
+S.rot = -TAU*.5; S.target = 0;                 // vitrin yarım tur dönerek açılır
+nodes.forEach((nd,k)=>{ nd.presence = 0; gsap.to(nd,{presence:1, duration:1, delay:.25+k*.06, ease:'back.out(1.6)'}); });
+gsap.from('#disc, #discEdge',{opacity:0, duration:1.3, ease:'power2.out', onComplete:()=>S.introDone=true});
+gsap.from('header, #controls',{opacity:0, y:-10, duration:1, delay:.9});
+gsap.from('.cta-front',{opacity:0, duration:.8, delay:1.6});
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
